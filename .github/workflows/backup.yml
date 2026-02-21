@@ -1,0 +1,65 @@
+name: Komari Data Backup
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download backup from Komari API
+        run: |
+          TIMESTAMP=$(date -u +"%Y%m%d-%H%M%S")
+          FILENAME="backup-${TIMESTAMP}.zip"
+
+          HTTP_CODE=$(curl -s -o "${FILENAME}" -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.KOMARI_API_KEY }}" \
+            "${{ secrets.KOMARI_BASE_URL }}/api/admin/download/backup")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::error::Backup download failed with HTTP status ${HTTP_CODE}"
+            cat "${FILENAME}" 2>/dev/null || true
+            exit 1
+          fi
+
+          FILE_SIZE=$(stat -c%s "${FILENAME}")
+          echo "Backup downloaded successfully: ${FILENAME} (${FILE_SIZE} bytes)"
+          echo "BACKUP_FILE=${FILENAME}" >> $GITHUB_ENV
+
+      - name: Push backup to backup branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          WORKDIR=$(mktemp -d)
+          cd "$WORKDIR"
+          git init
+          # Use bot identity to avoid GitHub contribution graph
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git"
+
+          # Try to pull existing backup branch
+          if git fetch origin backup --depth=1 2>/dev/null; then
+            git checkout backup
+          else
+            git checkout --orphan backup
+          fi
+
+          # Copy new backup into this directory
+          cp "$GITHUB_WORKSPACE/${BACKUP_FILE}" .
+
+          # Keep only the latest 30 backups
+          TOTAL=$(ls -1 backup-*.zip 2>/dev/null | wc -l)
+          if [ "$TOTAL" -gt 30 ]; then
+            ls -1 backup-*.zip | sort | head -n $((TOTAL - 30)) | xargs rm -f
+          fi
+
+          git add -A
+          git commit -m "backup: ${BACKUP_FILE}"
+          git push -f origin HEAD:backup
