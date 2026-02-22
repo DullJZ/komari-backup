@@ -18,10 +18,13 @@
 > [!CAUTION]
 > **数据泄露警告**：请务必确保您的**备份仓库是私有（Private）的**！否则所有的备份文件都将被公开访问！
 
-1. 🍴 **Fork 本仓库**：点击页面右上角的 `Fork` 按钮将本项目复制到您的账号。
-2. 🔒 **设置为私有**：在派生仓库的 `Settings` -> `General` -> 页面最下方的 `Danger Zone` 中，将仓库访问权限（Visibility）更改为 **Private**。
-3. 🔑 **配置环境变量**：在 `Settings` -> `Secrets and variables` -> `Actions` 中添加所需的 [Action Secrets](#%EF%B8%8F-secrets-配置)。
-4. ▶️ **启用并测试**：进入 `Actions` 页面，启用并同意使用 Workflows，运行一次 `Komari Data Backup` 工作流进行初步测试。
+1. 📥 **导入本仓库**：打开 [GitHub Import](https://github.com/new/import)，在 `Your old repository's clone URL` 中填入本仓库地址：
+   ```
+   https://github.com/DullJZ/komari-backup
+   ```
+   在 `Privacy` 中选择 **Private**，然后点击 `Begin import` 完成导入。
+2. 🔑 **配置环境变量**：在导入后的仓库中，进入 `Settings` -> `Secrets and variables` -> `Actions`，添加所需的 [Action Secrets](#%EF%B8%8F-secrets-配置)。
+3. ▶️ **启用并测试**：进入 `Actions` 页面，启用并同意使用 Workflows，运行一次 `Komari Data Backup` 工作流进行初步测试。
 
 ---
 
